@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -211,7 +211,7 @@ export default function BulletinVisite() {
           setFormationsGrouped(grouped);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     sourceService
       .getAll()
@@ -224,7 +224,7 @@ export default function BulletinVisite() {
           setSourcesList(withIcons);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const toggleFormation = (id) => {
@@ -532,6 +532,7 @@ export default function BulletinVisite() {
       transition:all 0.18s ease;user-select:none;
     }
     .bv-check-item:hover { border-color:rgba(97,165,194,0.4);color:#c8e4f0;background:rgba(97,165,194,0.06); }
+    .bv-check-item:focus-visible { outline:2px solid #61a5c2;outline-offset:2px; }
     .bv-check-item.bv-checked {
       border-color:#61a5c2;
       background:rgba(97,165,194,0.14);
@@ -929,11 +930,23 @@ export default function BulletinVisite() {
                       {items.map((f) => {
                         const isChecked = selectedFormations.includes(f.id);
                         return (
-                          <label key={f.id} className={`bv-check-item${isChecked ? ' bv-checked' : ''}`} onClick={() => toggleFormation(f.id)}>
-                            <input type="checkbox" readOnly checked={isChecked} />
+                          <div
+                            key={f.id}
+                            role="checkbox"
+                            aria-checked={isChecked}
+                            tabIndex={0}
+                            className={`bv-check-item${isChecked ? ' bv-checked' : ''}`}
+                            onClick={() => toggleFormation(f.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === ' ' || e.key === 'Enter') {
+                                e.preventDefault();
+                                toggleFormation(f.id);
+                              }
+                            }}
+                          >
                             <span className="bv-check-box">{isChecked && <span className="bv-check-tick">✓</span>}</span>
                             <span>{f.nom}</span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -959,12 +972,24 @@ export default function BulletinVisite() {
                 {sourcesList.map((s) => {
                   const isChecked = selectedSources.includes(s.id);
                   return (
-                    <label key={s.id} className={`bv-check-item${isChecked ? ' bv-checked' : ''}`} onClick={() => toggleSource(s.id)}>
-                      <input type="checkbox" readOnly checked={isChecked} />
+                    <div
+                      key={s.id}
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      tabIndex={0}
+                      className={`bv-check-item${isChecked ? ' bv-checked' : ''}`}
+                      onClick={() => toggleSource(s.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          toggleSource(s.id);
+                        }
+                      }}
+                    >
                       <span className="bv-check-box">{isChecked && <span className="bv-check-tick">✓</span>}</span>
                       {s.IconComp && <s.IconComp size={14} style={{ flexShrink: 0, opacity: 0.7 }} />}
                       <span>{s.libelle}</span>
-                    </label>
+                    </div>
                   );
                 })}
               </div>
@@ -995,7 +1020,7 @@ export default function BulletinVisite() {
               )}
             </button>
             <p className="bv-submit-note">
-              🔒 Vos données sont protégées et strictement destinées au service des admissions d'EFET Agadir.
+              Vos données sont protégées et strictement destinées au service des admissions d'EFET Agadir.
             </p>
           </div>
 
