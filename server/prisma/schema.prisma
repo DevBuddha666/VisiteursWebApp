@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Modèle Admin ───────────────────────────────────────────────
+model Admin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  nom          String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+// ─── Modèle Orientateur ─────────────────────────────────────────
+model Orientateur {
+  id        String   @id @default(uuid())
+  nom       String
+  prenom    String
+  code      String   @unique
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  visiteurs Visiteur[]
+
+  @@map("orientateurs")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────
+enum Sexe {
+  F
+  M
+}
+
+enum NiveauScolaire {
+  BAC
+  NIVEAU_BAC
+  BAC_2
+  BAC_3
+}
+
+enum OptionBac {
+  SC_EXP
+  SC_MATH
+  SC_ECO
+  TECHNIQUE
+  LM
+  AUTRES
+}
+
+enum CategorieFormation {
+  BAC3_TS_LP
+  BAC2_TECHNICIEN
+  SANTE
+  BACHELOR
+  MASTER
+}
+
+// ─── Modèle Visiteur (Bulletin de visite) ───────────────────────
+model Visiteur {
+  id            String         @id @default(uuid())
+  dateVisite    DateTime       @map("date_visite")
+  heureVisite   String         @map("heure_visite")
+  numeroOrdre   Int            @map("numero_ordre")
+  nomPrenom     String         @map("nom_prenom")
+  dateNaissance DateTime       @map("date_naissance")
+  lieuNaissance String         @map("lieu_naissance")
+  sexe          Sexe
+  adresse       String
+  quartier      String
+  ville         String
+  telephone     String
+  email         String
+  niveauScolaire NiveauScolaire @map("niveau_scolaire")
+  etablissement  String
+  optionBac     OptionBac      @map("option_bac")
+  professionPere String        @map("profession_pere")
+  professionMere String        @map("profession_mere")
+  professionVisiteur String    @map("profession_visiteur")
+  orientateurId String?        @map("orientateur_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  orientateur   Orientateur?   @relation(fields: [orientateurId], references: [id])
+  formations    VisiteurFormation[]
+  sources       VisiteurSource[]
+
+  @@map("visiteurs")
+}
+
+// ─── Modèle Formation ───────────────────────────────────────────
+model Formation {
+  id        String              @id @default(uuid())
+  nom       String
+  categorie CategorieFormation
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  visiteurs VisiteurFormation[]
+
+  @@map("formations")
+}
+
+// ─── Table de liaison Visiteur ↔ Formation ──────────────────────
+model VisiteurFormation {
+  visiteurId  String    @map("visiteur_id")
+  formationId String    @map("formation_id")
+
+  visiteur    Visiteur  @relation(fields: [visiteurId], references: [id], onDelete: Cascade)
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  @@id([visiteurId, formationId])
+  @@map("visiteur_formations")
+}
+
+// ─── Modèle Source de Connaissance ──────────────────────────────
+model SourceConnaissance {
+  id        String           @id @default(uuid())
+  libelle   String
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  visiteurs VisiteurSource[]
+
+  @@map("sources_connaissance")
+}
+
+// ─── Table de liaison Visiteur ↔ Source ─────────────────────────
+model VisiteurSource {
+  visiteurId String             @map("visiteur_id")
+  sourceId   String             @map("source_id")
+
+  visiteur   Visiteur           @relation(fields: [visiteurId], references: [id], onDelete: Cascade)
+  source     SourceConnaissance @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@id([visiteurId, sourceId])
+  @@map("visiteur_sources")
+}
