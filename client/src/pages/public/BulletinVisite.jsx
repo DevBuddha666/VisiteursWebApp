@@ -185,7 +185,7 @@ export default function BulletinVisite() {
       return;
     }
     orientateurService
-      .getByCode(refCode)
+      .verify(refCode)
       .then((res) => {
         if (res.data.success && res.data.data) {
           setOrientateurInfo(res.data.data);
@@ -268,6 +268,36 @@ export default function BulletinVisite() {
       setSubmitting(false);
     }
   };
+
+  // ── LOADING SCREEN (while checking QR code) ──
+  if (orientateurStatus === 'checking') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--bg-body)',
+          flexDirection: 'column',
+          gap: '1.25rem',
+        }}
+      >
+        <div
+          style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '50%',
+            border: '4px solid var(--light-blue)',
+            borderTopColor: 'var(--deep-space-blue)',
+            animation: 'spin 0.8s linear infinite',
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Vérification en cours…</p>
+      </div>
+    );
+  }
 
   // ── SUCCESS SCREEN ──
   if (submitted) {
