@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -269,32 +269,399 @@ export default function BulletinVisite() {
     }
   };
 
-  // ── LOADING SCREEN (while checking QR code) ──
+  // ── STYLES FUTURISTES INLINE ──
+  const STYLES = `
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    @keyframes bv-spin { to { transform: rotate(360deg); } }
+    @keyframes bv-float { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-18px) scale(1.04);} }
+    @keyframes bv-pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(97,165,194,0.25),0 0 40px rgba(97,165,194,0.1);} 50%{box-shadow:0 0 35px rgba(97,165,194,0.5),0 0 70px rgba(97,165,194,0.2);} }
+    @keyframes bv-scanline { 0%{top:-100%;} 100%{top:200%;} }
+    @keyframes bv-fadeup { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes bv-shimmer { 0%{background-position:-200% center;} 100%{background-position:200% center;} }
+    @keyframes bv-orb1 { 0%,100%{transform:translate(0,0);} 33%{transform:translate(60px,-40px);} 66%{transform:translate(-40px,30px);} }
+    @keyframes bv-orb2 { 0%,100%{transform:translate(0,0);} 33%{transform:translate(-50px,60px);} 66%{transform:translate(70px,-30px);} }
+    @keyframes bv-orb3 { 0%,100%{transform:translate(0,0);} 50%{transform:translate(40px,50px);} }
+    @keyframes bv-tick { 0%{stroke-dashoffset:50;} 100%{stroke-dashoffset:0;} }
+
+    .bv-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #010d1a 0%, #012a4a 40%, #01497c 75%, #0a2040 100%);
+      font-family: 'Inter', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      padding-bottom: 4rem;
+    }
+    .bv-page::before {
+      content:'';
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, rgba(97,165,194,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(1,73,124,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(44,125,160,0.06) 0%, transparent 70%);
+      pointer-events:none;
+      z-index:0;
+    }
+    .bv-grid-overlay {
+      position:fixed;
+      inset:0;
+      background-image:
+        linear-gradient(rgba(97,165,194,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(97,165,194,0.04) 1px, transparent 1px);
+      background-size:50px 50px;
+      pointer-events:none;
+      z-index:0;
+    }
+    .bv-orb {
+      position:fixed;
+      border-radius:50%;
+      pointer-events:none;
+      filter:blur(80px);
+      z-index:0;
+      opacity:0.18;
+    }
+    .bv-orb-1 { width:500px;height:500px;background:radial-gradient(circle,#61a5c2,transparent 70%);top:-150px;right:-100px;animation:bv-orb1 18s ease-in-out infinite; }
+    .bv-orb-2 { width:400px;height:400px;background:radial-gradient(circle,#014f86,transparent 70%);bottom:-100px;left:-80px;animation:bv-orb2 22s ease-in-out infinite; }
+    .bv-orb-3 { width:300px;height:300px;background:radial-gradient(circle,#2c7da0,transparent 70%);top:50%;left:40%;animation:bv-orb3 15s ease-in-out infinite; }
+
+    .bv-header {
+      position:relative;
+      z-index:10;
+      border-bottom:1px solid rgba(97,165,194,0.15);
+      backdrop-filter:blur(20px);
+      background:rgba(1,10,26,0.6);
+      padding:1.5rem;
+    }
+    .bv-header-inner { max-width:900px;margin:0 auto; }
+    .bv-header-top { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem; }
+
+    .bv-logo-wrap {
+      display:flex;align-items:center;gap:1rem;
+    }
+    .bv-logo-box {
+      height:52px;
+      padding:6px 14px;
+      border-radius:12px;
+      background:rgba(255,255,255,0.95);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 0 20px rgba(97,165,194,0.3),0 4px 12px rgba(0,0,0,0.3);
+    }
+    .bv-logo-box img { height:38px;width:auto;object-fit:contain; }
+    .bv-school-name {
+      font-family:'Orbitron',sans-serif;
+      font-size:1.4rem;font-weight:800;
+      background:linear-gradient(90deg,#fff 0%,#89c2d9 50%,#61a5c2 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      letter-spacing:1px;margin:0;
+    }
+    .bv-school-sub { font-size:0.78rem;color:rgba(169,214,229,0.75);font-weight:400;margin-top:2px; }
+
+    .bv-clock-badge {
+      background:rgba(97,165,194,0.08);
+      border:1px solid rgba(97,165,194,0.25);
+      backdrop-filter:blur(12px);
+      padding:0.5rem 1rem;
+      border-radius:50px;
+      font-size:0.82rem;
+      color:rgba(255,255,255,0.85);
+      display:flex;align-items:center;gap:0.5rem;
+      font-family:'Courier New',monospace;
+    }
+    .bv-clock-sep { opacity:0.35;margin:0 2px; }
+    .bv-clock-time { font-weight:700;color:#89c2d9;letter-spacing:1px; }
+
+    .bv-header-banner {
+      margin-top:1.25rem;
+      padding:1rem 1.25rem;
+      background:linear-gradient(90deg,rgba(97,165,194,0.08) 0%,rgba(1,73,124,0.12) 100%);
+      border-radius:12px;
+      border:1px solid rgba(97,165,194,0.18);
+      border-left:3px solid #61a5c2;
+      position:relative;overflow:hidden;
+    }
+    .bv-header-banner::after {
+      content:'';position:absolute;top:-50%;left:-100%;
+      width:60%;height:200%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);
+      animation:bv-scanline 4s linear infinite;
+    }
+    .bv-banner-title { font-size:1.1rem;font-weight:700;color:#fff;margin:0;letter-spacing:0.3px; }
+    .bv-banner-sub { font-size:0.82rem;color:rgba(169,214,229,0.8);margin:4px 0 0 0;line-height:1.5; }
+
+    .bv-alert-valid {
+      margin-top:1rem;
+      background:rgba(56,161,105,0.1);
+      border:1px solid rgba(56,161,105,0.4);
+      border-radius:10px;padding:0.75rem 1rem;
+      display:flex;align-items:center;gap:0.75rem;
+      font-size:0.88rem;color:#9ae6b4;
+    }
+    .bv-alert-invalid {
+      margin-top:1rem;
+      background:rgba(229,62,62,0.08);
+      border:1px solid rgba(229,62,62,0.35);
+      border-radius:10px;padding:0.75rem 1rem;
+      font-size:0.85rem;color:#fed7d7;
+      display:flex;align-items:center;gap:0.5rem;
+    }
+
+    .bv-main { max-width:900px;margin:0 auto;padding:2rem 1.25rem 0;position:relative;z-index:10; }
+
+    .bv-card {
+      background:rgba(1,20,40,0.55);
+      backdrop-filter:blur(24px);
+      border:1px solid rgba(97,165,194,0.18);
+      border-radius:18px;
+      margin-bottom:1.5rem;
+      overflow:hidden;
+      transition:border-color 0.3s ease,box-shadow 0.3s ease;
+      animation:bv-fadeup 0.5s ease both;
+    }
+    .bv-card:hover {
+      border-color:rgba(97,165,194,0.35);
+      box-shadow:0 8px 40px rgba(1,73,124,0.3),0 0 0 1px rgba(97,165,194,0.08);
+    }
+    .bv-card-header {
+      padding:1.1rem 1.5rem;
+      background:linear-gradient(90deg,rgba(1,73,124,0.5) 0%,rgba(97,165,194,0.08) 100%);
+      border-bottom:1px solid rgba(97,165,194,0.15);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .bv-card-title-wrap { display:flex;align-items:center;gap:0.75rem; }
+    .bv-step-num {
+      width:28px;height:28px;border-radius:50%;
+      background:linear-gradient(135deg,#014f86,#2c7da0);
+      color:#fff;font-size:0.75rem;font-weight:800;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 0 12px rgba(97,165,194,0.4);
+      flex-shrink:0;
+    }
+    .bv-card-icon { color:#61a5c2; }
+    .bv-card-title { font-size:1rem;font-weight:700;color:#e2f0f8;letter-spacing:0.2px; }
+    .bv-badge-count {
+      font-size:0.72rem;font-weight:700;
+      background:rgba(97,165,194,0.15);
+      border:1px solid rgba(97,165,194,0.3);
+      color:#89c2d9;padding:0.2rem 0.65rem;border-radius:50px;
+    }
+    .bv-badge-req {
+      font-size:0.72rem;font-weight:700;
+      background:rgba(1,73,124,0.4);
+      border:1px solid rgba(97,165,194,0.25);
+      color:#a9d6e5;padding:0.2rem 0.65rem;border-radius:50px;
+    }
+    .bv-card-body { padding:1.5rem; }
+
+    .bv-form-group { margin-bottom:1.25rem; }
+    .bv-form-group:last-child { margin-bottom:0; }
+    .bv-label {
+      display:block;font-size:0.8rem;font-weight:600;
+      color:#89c2d9;margin-bottom:0.4rem;letter-spacing:0.3px;text-transform:uppercase;
+    }
+    .bv-input, .bv-select {
+      width:100%;
+      padding:0.75rem 1rem;
+      font-size:0.93rem;
+      color:#e8f4fc;
+      background:rgba(1,13,30,0.6);
+      border:1.5px solid rgba(97,165,194,0.2);
+      border-radius:10px;
+      outline:none;
+      transition:all 0.25s ease;
+      font-family:'Inter',sans-serif;
+    }
+    .bv-input:focus, .bv-select:focus {
+      border-color:#61a5c2;
+      box-shadow:0 0 0 3px rgba(97,165,194,0.12),0 0 20px rgba(97,165,194,0.08);
+      background:rgba(1,20,45,0.8);
+    }
+    .bv-input::placeholder { color:rgba(137,194,217,0.35); }
+    .bv-input.bv-err, .bv-select.bv-err {
+      border-color:rgba(229,62,62,0.6);
+      box-shadow:0 0 0 3px rgba(229,62,62,0.08);
+    }
+    .bv-select option { background:#012a4a;color:#e8f4fc; }
+    .bv-form-error {
+      font-size:0.75rem;color:#fc8181;margin-top:5px;
+      display:flex;align-items:center;gap:4px;
+    }
+    .bv-form-row { display:grid;grid-template-columns:1fr 1fr;gap:1rem; }
+    @media(max-width:640px){ .bv-form-row{grid-template-columns:1fr;} }
+
+    .bv-radio-group { display:flex;flex-wrap:wrap;gap:0.6rem; }
+    .bv-radio-item {
+      display:flex;align-items:center;gap:0.5rem;
+      padding:0.55rem 1rem;
+      background:rgba(1,13,30,0.5);
+      border:1.5px solid rgba(97,165,194,0.18);
+      border-radius:50px;cursor:pointer;
+      font-size:0.88rem;color:rgba(200,228,240,0.8);
+      transition:all 0.2s ease;user-select:none;
+    }
+    .bv-radio-item:hover { border-color:rgba(97,165,194,0.45);color:#e8f4fc; }
+    .bv-radio-item.sel {
+      border-color:#61a5c2;
+      background:rgba(97,165,194,0.12);
+      color:#89c2d9;font-weight:600;
+      box-shadow:0 0 12px rgba(97,165,194,0.15);
+    }
+    .bv-radio-item input { display:none; }
+
+    .bv-section-label {
+      font-size:0.82rem;font-weight:700;
+      color:#61a5c2;
+      padding:0.45rem 0.85rem;
+      background:rgba(1,73,124,0.25);
+      border-radius:8px;
+      border-left:3px solid #2c7da0;
+      margin-bottom:0.75rem;
+      display:flex;align-items:center;gap:0.5rem;
+      letter-spacing:0.2px;
+    }
+    .bv-section-count { margin-left:auto;font-size:0.72rem;font-weight:500;color:rgba(137,194,217,0.6); }
+
+    .bv-checkbox-grid { display:flex;flex-wrap:wrap;gap:0.5rem; }
+    .bv-check-item {
+      display:flex;align-items:center;gap:0.5rem;
+      padding:0.5rem 0.85rem;
+      background:rgba(1,13,30,0.45);
+      border:1.5px solid rgba(97,165,194,0.15);
+      border-radius:8px;cursor:pointer;
+      font-size:0.83rem;color:rgba(200,228,240,0.75);
+      transition:all 0.18s ease;user-select:none;
+    }
+    .bv-check-item:hover { border-color:rgba(97,165,194,0.4);color:#c8e4f0;background:rgba(97,165,194,0.06); }
+    .bv-check-item.bv-checked {
+      border-color:#61a5c2;
+      background:rgba(97,165,194,0.14);
+      color:#89c2d9;font-weight:600;
+      box-shadow:0 0 10px rgba(97,165,194,0.12);
+    }
+    .bv-check-item input { display:none; }
+    .bv-check-box {
+      width:16px;height:16px;border-radius:4px;flex-shrink:0;
+      border:1.5px solid rgba(97,165,194,0.35);
+      background:transparent;transition:all 0.15s ease;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .bv-checked .bv-check-box {
+      background:#2c7da0;border-color:#61a5c2;
+    }
+    .bv-check-tick { font-size:10px;color:#fff;line-height:1; }
+
+    .bv-hint { font-size:0.8rem;color:rgba(137,194,217,0.55);margin-bottom:1.1rem;line-height:1.5; }
+
+    .bv-error-box {
+      padding:1rem 1.25rem;
+      border-radius:12px;
+      background:rgba(229,62,62,0.08);
+      color:#fc8181;
+      margin-bottom:1.5rem;
+      font-size:0.88rem;
+      border:1px solid rgba(229,62,62,0.3);
+      display:flex;align-items:center;gap:0.6rem;
+    }
+
+    .bv-submit-wrap { text-align:center;margin-top:2rem;animation:bv-fadeup 0.6s ease both; }
+    .bv-submit-btn {
+      display:inline-flex;align-items:center;gap:0.75rem;
+      padding:1rem 3rem;
+      font-size:1.05rem;font-weight:700;
+      font-family:'Inter',sans-serif;
+      background:linear-gradient(135deg,#014f86 0%,#2c7da0 50%,#61a5c2 100%);
+      background-size:200% auto;
+      color:#fff;border:none;border-radius:50px;cursor:pointer;
+      transition:all 0.3s ease;
+      box-shadow:0 4px 20px rgba(1,79,134,0.5),0 0 0 1px rgba(97,165,194,0.2);
+      letter-spacing:0.3px;
+      animation:bv-pulse-glow 3s ease-in-out infinite;
+    }
+    .bv-submit-btn:hover:not(:disabled) {
+      background-position:right center;
+      box-shadow:0 8px 30px rgba(1,79,134,0.7),0 0 30px rgba(97,165,194,0.2);
+      transform:translateY(-2px);
+    }
+    .bv-submit-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none;animation:none; }
+    .bv-submit-note { font-size:0.75rem;color:rgba(137,194,217,0.4);margin-top:0.85rem;line-height:1.5; }
+
+    .bv-footer {
+      position:relative;z-index:10;
+      text-align:center;padding-top:2rem;
+      font-size:0.75rem;color:rgba(137,194,217,0.3);letter-spacing:0.5px;
+    }
+
+    /* ── LOADING ── */
+    .bv-loading {
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#010d1a 0%,#012a4a 60%,#01497c 100%);
+      flex-direction:column;gap:1.5rem;position:relative;overflow:hidden;
+    }
+    .bv-loading-ring {
+      width:64px;height:64px;border-radius:50%;
+      border:3px solid rgba(97,165,194,0.15);
+      border-top-color:#61a5c2;
+      animation:bv-spin 0.8s linear infinite;
+      box-shadow:0 0 25px rgba(97,165,194,0.3);
+    }
+    .bv-loading-text { color:#89c2d9;font-size:0.9rem;letter-spacing:1px;font-family:'Orbitron',sans-serif; }
+
+    /* ── SUCCESS ── */
+    .bv-success {
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#010d1a 0%,#012a4a 60%,#01497c 100%);
+      padding:2rem;position:relative;overflow:hidden;
+    }
+    .bv-success-card {
+      background:rgba(1,20,40,0.7);
+      backdrop-filter:blur(30px);
+      border:1px solid rgba(97,165,194,0.2);
+      border-radius:24px;
+      max-width:520px;width:100%;
+      padding:3rem 2.5rem;text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 80px rgba(97,165,194,0.08);
+      animation:bv-fadeup 0.5s ease;
+    }
+    .bv-success-icon {
+      width:90px;height:90px;border-radius:50%;margin:0 auto 2rem;
+      background:linear-gradient(135deg,rgba(56,161,105,0.2),rgba(56,161,105,0.05));
+      border:2px solid rgba(56,161,105,0.4);
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.5rem;
+      box-shadow:0 0 30px rgba(56,161,105,0.2);
+      animation:bv-pulse-glow 3s ease-in-out infinite;
+    }
+    .bv-success-title {
+      font-size:1.7rem;font-weight:800;color:#e8f4fc;margin-bottom:0.6rem;
+      font-family:'Orbitron',sans-serif;letter-spacing:0.5px;
+    }
+    .bv-success-sub { font-size:0.9rem;color:rgba(169,214,229,0.7);margin-bottom:1.75rem;line-height:1.6; }
+    .bv-success-ref {
+      background:rgba(44,125,160,0.1);border:1px solid rgba(97,165,194,0.2);
+      border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.75rem;
+      font-size:0.85rem;color:#89c2d9;
+    }
+    .bv-success-btn {
+      display:inline-flex;align-items:center;gap:0.6rem;
+      padding:0.85rem 2.5rem;font-size:0.95rem;font-weight:700;
+      background:linear-gradient(135deg,#014f86,#2c7da0);
+      color:#fff;border:none;border-radius:50px;cursor:pointer;
+      transition:all 0.25s ease;
+      box-shadow:0 4px 20px rgba(1,79,134,0.4);
+    }
+    .bv-success-btn:hover { transform:translateY(-2px);box-shadow:0 8px 25px rgba(1,79,134,0.6); }
+  `;
+
+  // ── LOADING SCREEN ──
   if (orientateurStatus === 'checking') {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--bg-body)',
-          flexDirection: 'column',
-          gap: '1.25rem',
-        }}
-      >
-        <div
-          style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '50%',
-            border: '4px solid var(--light-blue)',
-            borderTopColor: 'var(--deep-space-blue)',
-            animation: 'spin 0.8s linear infinite',
-          }}
-        />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Vérification en cours…</p>
+      <div className="bv-loading">
+        <style>{STYLES}</style>
+        <div className="bv-orb bv-orb-1" />
+        <div className="bv-orb bv-orb-2" />
+        <img src="/logo-efet.png" alt="EFET" style={{ height: '44px', opacity: 0.8, marginBottom: '0.5rem' }} />
+        <div className="bv-loading-ring" />
+        <p className="bv-loading-text">VÉRIFICATION EN COURS…</p>
       </div>
     );
   }
@@ -302,569 +669,323 @@ export default function BulletinVisite() {
   // ── SUCCESS SCREEN ──
   if (submitted) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--bg-body)',
-          padding: '1.5rem',
-        }}
-      >
-        <div
-          className="card"
-          style={{
-            maxWidth: '560px',
-            width: '100%',
-            textAlign: 'center',
-            padding: '2.5rem 2rem',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-xl)',
-          }}
-        >
-          <div style={{ marginBottom: '1.25rem' }}>
-            <img
-              src="/logo-efet.png"
-              alt="Logo EFET AGADIR"
-              style={{ height: '48px', width: 'auto', objectFit: 'contain' }}
-            />
-          </div>
-
-          <div
-            style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: 'var(--success-bg)',
-              color: 'var(--success)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '2.5rem',
-              margin: '0 auto 1.5rem',
-            }}
-          >
-            ✓
-          </div>
-
-          <h1 style={{ fontSize: '1.75rem', color: 'var(--deep-space-blue)', fontWeight: 800, marginBottom: '0.5rem' }}>
-            Merci pour votre visite !
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-            Votre bulletin de visite a bien été enregistré. Notre équipe vous contactera très prochainement.
+      <div className="bv-success">
+        <style>{STYLES}</style>
+        <div className="bv-orb bv-orb-1" />
+        <div className="bv-orb bv-orb-2" />
+        <div className="bv-success-card">
+          <img src="/logo-efet.png" alt="Logo EFET AGADIR" style={{ height: '44px', margin: '0 auto 1.75rem', opacity: 0.9 }} />
+          <div className="bv-success-icon">✓</div>
+          <h1 className="bv-success-title">Merci pour votre visite !</h1>
+          <p className="bv-success-sub">
+            Votre bulletin a bien été enregistré.<br />Notre équipe vous contactera très prochainement.
           </p>
-
           {orientateurInfo && (
-            <div
-              style={{
-                background: 'rgba(44, 125, 160, 0.08)',
-                borderRadius: 'var(--radius-md)',
-                padding: '0.75rem 1rem',
-                marginBottom: '1.5rem',
-                fontSize: '0.85rem',
-                color: 'var(--cerulean)',
-              }}
-            >
-              Orientateur référent : <strong>{orientateurInfo.prenom} {orientateurInfo.nom}</strong>
+            <div className="bv-success-ref">
+              Conseiller référent : <strong style={{ color: '#61a5c2' }}>{orientateurInfo.prenom} {orientateurInfo.nom}</strong>
             </div>
           )}
-
-          <button
-            className="btn btn-primary btn-lg"
-            onClick={() => {
-              setSubmitted(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          >
-            Remplir un nouveau bulletin
+          <button className="bv-success-btn" onClick={() => { setSubmitted(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+            <HiOutlineClipboard size={17} />
+            Nouveau bulletin
           </button>
         </div>
       </div>
     );
   }
 
+  // ── MAIN FORM ──
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: '3rem' }}>
-      {/* Top Banner / Header */}
-      <header
-        style={{
-          background: 'linear-gradient(135deg, var(--deep-space-blue) 0%, var(--yale-blue-2) 100%)',
-          color: 'var(--white)',
-          padding: '2rem 1.5rem',
-          boxShadow: 'var(--shadow-md)',
-        }}
-      >
-        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div
-                style={{
-                  height: '56px',
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  background: 'var(--white)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                }}
-              >
-                <img
-                  src="/logo-efet.png"
-                  alt="Logo EFET AGADIR"
-                  style={{ height: '42px', width: 'auto', objectFit: 'contain' }}
-                />
+    <div className="bv-page">
+      <style>{STYLES}</style>
+      <div className="bv-grid-overlay" />
+      <div className="bv-orb bv-orb-1" />
+      <div className="bv-orb bv-orb-2" />
+      <div className="bv-orb bv-orb-3" />
+
+      {/* ── HEADER ── */}
+      <header className="bv-header">
+        <div className="bv-header-inner">
+          <div className="bv-header-top">
+            <div className="bv-logo-wrap">
+              <div className="bv-logo-box">
+                <img src="/logo-efet.png" alt="Logo EFET AGADIR" />
               </div>
               <div>
-                <h1 style={{ fontSize: '1.6rem', fontWeight: 800, letterSpacing: '0.5px', margin: 0, color: 'var(--white)' }}>
-                  EFET AGADIR
-                </h1>
-                <div style={{ fontSize: '0.85rem', color: 'var(--light-blue)' }}>
-                  École Française d'Enseignement Technique
-                </div>
+                <h1 className="bv-school-name">EFET AGADIR</h1>
+                <div className="bv-school-sub">École Française d'Enseignement Technique</div>
               </div>
             </div>
 
-            {/* Live Clock & Date Badge */}
-            <div
-              style={{
-                background: 'rgba(255, 255, 255, 0.12)',
-                backdropFilter: 'blur(8px)',
-                padding: '0.5rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }}
-            >
-              <HiOutlineCalendar size={15} />
+            <div className="bv-clock-badge">
+              <HiOutlineCalendar size={14} style={{ color: '#61a5c2' }} />
               <span>
-                {currentTime.toLocaleDateString('fr-FR', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
+                {currentTime.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
-              <span style={{ opacity: 0.5 }}>|</span>
-              <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+              <span className="bv-clock-sep">|</span>
+              <span className="bv-clock-time">
                 {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             </div>
           </div>
 
-          <div
-            style={{
-              marginTop: '1.5rem',
-              padding: '1rem 1.25rem',
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: 'var(--radius-md)',
-              borderLeft: '4px solid var(--sky-blue-light)',
-            }}
-          >
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: 'var(--white)' }}>
-              Bulletin de Visite & d'Information
-            </h2>
-            <p style={{ fontSize: '0.85rem', margin: '4px 0 0 0', color: 'var(--light-blue)', opacity: 0.9 }}>
+          <div className="bv-header-banner">
+            <h2 className="bv-banner-title">Bulletin de Visite &amp; d'Information</h2>
+            <p className="bv-banner-sub">
               Bienvenue à EFET Agadir. Veuillez renseigner ce formulaire pour personnaliser votre entretien et recevoir notre documentation complète.
             </p>
           </div>
 
-          {/* Orientateur Badge if scanned */}
           {orientateurStatus === 'valid' && orientateurInfo && (
-            <div
-              style={{
-                marginTop: '1rem',
-                background: 'rgba(56, 161, 105, 0.15)',
-                border: '1px solid #38a169',
-                color: '#e6fffa',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                fontSize: '0.9rem',
-              }}
-            >
+            <div className="bv-alert-valid">
               <HiOutlineLightBulb size={20} style={{ flexShrink: 0 }} />
               <div>
                 Vous êtes orienté(e) par :{' '}
-                <strong style={{ textDecoration: 'underline' }}>
-                  {orientateurInfo.prenom} {orientateurInfo.nom}
-                </strong>
-                <span style={{ fontSize: '0.8rem', opacity: 0.8, marginLeft: '0.5rem' }}>
-                  (Conseiller attitré)
-                </span>
+                <strong style={{ color: '#68d391' }}>{orientateurInfo.prenom} {orientateurInfo.nom}</strong>
+                <span style={{ fontSize: '0.78rem', opacity: 0.7, marginLeft: '0.5rem' }}>(Conseiller attitré)</span>
               </div>
             </div>
           )}
 
           {orientateurStatus === 'invalid' && (
-            <div
-              style={{
-                marginTop: '1rem',
-                background: 'rgba(229, 62, 62, 0.15)',
-                border: '1px solid #e53e3e',
-                color: '#fff5f5',
-                padding: '0.75rem 1rem',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.85rem',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineExclamationCircle size={16} />
-                Le code orientateur indiqué n'est plus actif. Vous pouvez néanmoins continuer et remplir votre bulletin.
-              </span>
+            <div className="bv-alert-invalid">
+              <HiOutlineExclamationCircle size={16} style={{ flexShrink: 0 }} />
+              Le code orientateur indiqué n'est plus actif. Vous pouvez néanmoins continuer et remplir votre bulletin.
             </div>
           )}
         </div>
       </header>
 
-      {/* Main Form Container */}
-      <main style={{ maxWidth: '850px', margin: '-1.5rem auto 0', padding: '0 1rem' }}>
+      {/* ── FORM ── */}
+      <main className="bv-main">
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Card 1: Informations Personnelles */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineUser size={20} style={{ color: 'var(--cerulean)' }} />
-                <span className="card-title">1. Informations Personnelles</span>
+
+          {/* Card 1 — Informations Personnelles */}
+          <div className="bv-card" style={{ animationDelay: '0.05s' }}>
+            <div className="bv-card-header">
+              <div className="bv-card-title-wrap">
+                <div className="bv-step-num">1</div>
+                <HiOutlineUser size={18} className="bv-card-icon" />
+                <span className="bv-card-title">Informations Personnelles</span>
               </div>
-              <span className="badge badge-primary">Obligatoire</span>
+              <span className="bv-badge-req">Obligatoire</span>
             </div>
+            <div className="bv-card-body">
 
-            <div className="form-group">
-              <label className="form-label">Nom et Prénom *</label>
-              <input
-                type="text"
-                className={`form-input ${errors.nomPrenom ? 'error' : ''}`}
-                placeholder="Ex: Alami Mehdi"
-                {...register('nomPrenom')}
-              />
-              {errors.nomPrenom && <div className="form-error">{errors.nomPrenom.message}</div>}
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Date de naissance *</label>
-                <input
-                  type="date"
-                  className={`form-input ${errors.dateNaissance ? 'error' : ''}`}
-                  {...register('dateNaissance')}
-                />
-                {errors.dateNaissance && <div className="form-error">{errors.dateNaissance.message}</div>}
+              <div className="bv-form-group">
+                <label className="bv-label">Nom et Prénom *</label>
+                <input type="text" className={`bv-input ${errors.nomPrenom ? 'bv-err' : ''}`} placeholder="Ex: Alami Mehdi" {...register('nomPrenom')} />
+                {errors.nomPrenom && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.nomPrenom.message}</div>}
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Lieu de naissance *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.lieuNaissance ? 'error' : ''}`}
-                  placeholder="Ex: Agadir"
-                  {...register('lieuNaissance')}
-                />
-                {errors.lieuNaissance && <div className="form-error">{errors.lieuNaissance.message}</div>}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Sexe *</label>
-              <div className="radio-group">
-                <label className="radio-item">
-                  <input type="radio" value="F" {...register('sexe')} />
-                  <span>Femme</span>
-                </label>
-                <label className="radio-item">
-                  <input type="radio" value="M" {...register('sexe')} />
-                  <span>Homme</span>
-                </label>
-              </div>
-              {errors.sexe && <div className="form-error">{errors.sexe.message}</div>}
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Adresse *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.adresse ? 'error' : ''}`}
-                  placeholder="N° et Rue"
-                  {...register('adresse')}
-                />
-                {errors.adresse && <div className="form-error">{errors.adresse.message}</div>}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Quartier *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.quartier ? 'error' : ''}`}
-                  placeholder="Ex: Dakhla, Talborjt"
-                  {...register('quartier')}
-                />
-                {errors.quartier && <div className="form-error">{errors.quartier.message}</div>}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Ville *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.ville ? 'error' : ''}`}
-                  placeholder="Ex: Agadir, Inezgane"
-                  {...register('ville')}
-                />
-                {errors.ville && <div className="form-error">{errors.ville.message}</div>}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Téléphone *</label>
-                <input
-                  type="tel"
-                  className={`form-input ${errors.telephone ? 'error' : ''}`}
-                  placeholder="06 XX XX XX XX"
-                  {...register('telephone')}
-                />
-                {errors.telephone && <div className="form-error">{errors.telephone.message}</div>}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Adresse E-mail *</label>
-              <input
-                type="email"
-                className={`form-input ${errors.email ? 'error' : ''}`}
-                placeholder="nom.prenom@gmail.com"
-                {...register('email')}
-              />
-              {errors.email && <div className="form-error">{errors.email.message}</div>}
-            </div>
-          </div>
-
-          {/* Card 2: Parcours Scolaire */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineAcademicCap size={20} style={{ color: 'var(--cerulean)' }} />
-                <span className="card-title">2. Parcours Scolaire & Situation</span>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Niveau scolaire *</label>
-                <select className={`form-select ${errors.niveauScolaire ? 'error' : ''}`} {...register('niveauScolaire')}>
-                  <option value="BAC">BAC</option>
-                  <option value="NIVEAU_BAC">NIVEAU BAC</option>
-                  <option value="BAC_2">BAC +2</option>
-                  <option value="BAC_3">BAC +3</option>
-                </select>
-                {errors.niveauScolaire && <div className="form-error">{errors.niveauScolaire.message}</div>}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Établissement fréquenté *</label>
-                <input
-                  type="text"
-                  className={`form-input ${errors.etablissement ? 'error' : ''}`}
-                  placeholder="Lycée ou Faculté d'origine"
-                  {...register('etablissement')}
-                />
-                {errors.etablissement && <div className="form-error">{errors.etablissement.message}</div>}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Option du Baccalauréat *</label>
-              <select className={`form-select ${errors.optionBac ? 'error' : ''}`} {...register('optionBac')}>
-                <option value="SC_EXP">Sciences Expérimentales (SVT / PC)</option>
-                <option value="SC_MATH">Sciences Mathématiques</option>
-                <option value="SC_ECO">Sciences Économiques & Gestion</option>
-                <option value="TECHNIQUE">Technique (STM / STE)</option>
-                <option value="LM">Lettres & Sciences Humaines</option>
-                <option value="AUTRES">Autres Diplômes</option>
-              </select>
-              {errors.optionBac && <div className="form-error">{errors.optionBac.message}</div>}
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Profession du père</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Optionnel"
-                  {...register('professionPere')}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Profession de la mère</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Optionnel"
-                  {...register('professionMere')}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Profession actuelle du visiteur</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Ex: Étudiant, En recherche d'emploi, Employé(e)..."
-                {...register('professionVisiteur')}
-              />
-            </div>
-          </div>
-
-          {/* Card 3: Formations Souhaitées */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineBookOpen size={20} style={{ color: 'var(--cerulean)' }} />
-                <span className="card-title">3. Formations Souhaitées à l'EFET</span>
-              </div>
-              <span className="badge badge-info">{selectedFormations.length} sélectionnée(s)</span>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              Cochez la ou les filières qui vous intéressent pour votre inscription (multi-sélection possible) :
-            </p>
-
-            {Object.keys(CATEGORIE_LABELS).map((catKey) => {
-              const items = formationsGrouped[catKey] || [];
-              if (items.length === 0) return null;
-
-              return (
-                <div key={catKey} style={{ marginBottom: '1.5rem' }}>
-                  <div
-                    style={{
-                      fontSize: '0.9rem',
-                      fontWeight: 700,
-                      color: 'var(--yale-blue-2)',
-                      padding: '0.5rem 0.85rem',
-                      background: 'rgba(1, 73, 124, 0.06)',
-                      borderRadius: 'var(--radius-sm)',
-                      marginBottom: '0.75rem',
-                      borderLeft: '4px solid var(--cerulean)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    {(() => { const CatIcon = CATEGORIE_ICON_COMPONENTS[catKey] || HiOutlineBookOpen; return <CatIcon size={16} />; })()}
-                    <span>{CATEGORIE_LABELS[catKey]}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-                      {items.length} filière(s)
-                    </span>
-                  </div>
-
-                  <div className="checkbox-group">
-                    {items.map((f) => {
-                      const isChecked = selectedFormations.includes(f.id);
-                      return (
-                        <label
-                          key={f.id}
-                          className={`checkbox-item ${isChecked ? 'checked' : ''}`}
-                          style={{
-                            padding: '0.6rem 0.9rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleFormation(f.id)}
-                          />
-                          <span style={{ fontWeight: isChecked ? 600 : 400 }}>{f.nom}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+              <div className="bv-form-row">
+                <div className="bv-form-group">
+                  <label className="bv-label">Date de naissance *</label>
+                  <input type="date" className={`bv-input ${errors.dateNaissance ? 'bv-err' : ''}`} {...register('dateNaissance')} />
+                  {errors.dateNaissance && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.dateNaissance.message}</div>}
                 </div>
-              );
-            })}
+                <div className="bv-form-group">
+                  <label className="bv-label">Lieu de naissance *</label>
+                  <input type="text" className={`bv-input ${errors.lieuNaissance ? 'bv-err' : ''}`} placeholder="Ex: Agadir" {...register('lieuNaissance')} />
+                  {errors.lieuNaissance && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.lieuNaissance.message}</div>}
+                </div>
+              </div>
+
+              <div className="bv-form-group">
+                <label className="bv-label">Sexe *</label>
+                <div className="bv-radio-group">
+                  {[{ val: 'F', lbl: '♀ Femme' }, { val: 'M', lbl: '♂ Homme' }].map(({ val, lbl }) => (
+                    <label key={val} className={`bv-radio-item${errors.sexe || (register('sexe') && false) ? '' : ''}`}
+                      style={{ borderColor: undefined }}>
+                      <input type="radio" value={val} {...register('sexe')} />
+                      {lbl}
+                    </label>
+                  ))}
+                </div>
+                {errors.sexe && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.sexe.message}</div>}
+              </div>
+
+              <div className="bv-form-row">
+                <div className="bv-form-group">
+                  <label className="bv-label">Adresse *</label>
+                  <input type="text" className={`bv-input ${errors.adresse ? 'bv-err' : ''}`} placeholder="N° et Rue" {...register('adresse')} />
+                  {errors.adresse && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.adresse.message}</div>}
+                </div>
+                <div className="bv-form-group">
+                  <label className="bv-label">Quartier *</label>
+                  <input type="text" className={`bv-input ${errors.quartier ? 'bv-err' : ''}`} placeholder="Ex: Dakhla, Talborjt" {...register('quartier')} />
+                  {errors.quartier && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.quartier.message}</div>}
+                </div>
+              </div>
+
+              <div className="bv-form-row">
+                <div className="bv-form-group">
+                  <label className="bv-label">Ville *</label>
+                  <input type="text" className={`bv-input ${errors.ville ? 'bv-err' : ''}`} placeholder="Ex: Agadir, Inezgane" {...register('ville')} />
+                  {errors.ville && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.ville.message}</div>}
+                </div>
+                <div className="bv-form-group">
+                  <label className="bv-label">Téléphone *</label>
+                  <input type="tel" className={`bv-input ${errors.telephone ? 'bv-err' : ''}`} placeholder="06 XX XX XX XX" {...register('telephone')} />
+                  {errors.telephone && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.telephone.message}</div>}
+                </div>
+              </div>
+
+              <div className="bv-form-group">
+                <label className="bv-label">Adresse E-mail *</label>
+                <input type="email" className={`bv-input ${errors.email ? 'bv-err' : ''}`} placeholder="nom.prenom@gmail.com" {...register('email')} />
+                {errors.email && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.email.message}</div>}
+              </div>
+
+            </div>
           </div>
 
-          {/* Card 4: Comment avez-vous connu EFET ? */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineSpeakerphone size={20} style={{ color: 'var(--cerulean)' }} />
-                <span className="card-title">4. Comment avez-vous connu l'EFET ?</span>
+          {/* Card 2 — Parcours Scolaire */}
+          <div className="bv-card" style={{ animationDelay: '0.1s' }}>
+            <div className="bv-card-header">
+              <div className="bv-card-title-wrap">
+                <div className="bv-step-num">2</div>
+                <HiOutlineAcademicCap size={18} className="bv-card-icon" />
+                <span className="bv-card-title">Parcours Scolaire &amp; Situation</span>
               </div>
-              <span className="badge badge-info">{selectedSources.length} source(s)</span>
             </div>
+            <div className="bv-card-body">
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              Précisez le ou les moyens par lesquels vous avez découvert l'EFET Agadir :
-            </p>
+              <div className="bv-form-row">
+                <div className="bv-form-group">
+                  <label className="bv-label">Niveau scolaire *</label>
+                  <select className={`bv-select ${errors.niveauScolaire ? 'bv-err' : ''}`} {...register('niveauScolaire')}>
+                    <option value="BAC">BAC</option>
+                    <option value="NIVEAU_BAC">NIVEAU BAC</option>
+                    <option value="BAC_2">BAC +2</option>
+                    <option value="BAC_3">BAC +3</option>
+                  </select>
+                  {errors.niveauScolaire && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.niveauScolaire.message}</div>}
+                </div>
+                <div className="bv-form-group">
+                  <label className="bv-label">Établissement fréquenté *</label>
+                  <input type="text" className={`bv-input ${errors.etablissement ? 'bv-err' : ''}`} placeholder="Lycée ou Faculté d'origine" {...register('etablissement')} />
+                  {errors.etablissement && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.etablissement.message}</div>}
+                </div>
+              </div>
 
-            <div className="checkbox-group">
-              {sourcesList.map((s) => {
-                const isChecked = selectedSources.includes(s.id);
+              <div className="bv-form-group">
+                <label className="bv-label">Option du Baccalauréat *</label>
+                <select className={`bv-select ${errors.optionBac ? 'bv-err' : ''}`} {...register('optionBac')}>
+                  <option value="SC_EXP">Sciences Expérimentales (SVT / PC)</option>
+                  <option value="SC_MATH">Sciences Mathématiques</option>
+                  <option value="SC_ECO">Sciences Économiques &amp; Gestion</option>
+                  <option value="TECHNIQUE">Technique (STM / STE)</option>
+                  <option value="LM">Lettres &amp; Sciences Humaines</option>
+                  <option value="AUTRES">Autres Diplômes</option>
+                </select>
+                {errors.optionBac && <div className="bv-form-error"><HiOutlineExclamationCircle size={12} />{errors.optionBac.message}</div>}
+              </div>
+
+              <div className="bv-form-row">
+                <div className="bv-form-group">
+                  <label className="bv-label">Profession du père</label>
+                  <input type="text" className="bv-input" placeholder="Optionnel" {...register('professionPere')} />
+                </div>
+                <div className="bv-form-group">
+                  <label className="bv-label">Profession de la mère</label>
+                  <input type="text" className="bv-input" placeholder="Optionnel" {...register('professionMere')} />
+                </div>
+              </div>
+
+              <div className="bv-form-group">
+                <label className="bv-label">Profession actuelle du visiteur</label>
+                <input type="text" className="bv-input" placeholder="Ex: Étudiant, En recherche d'emploi, Employé(e)..." {...register('professionVisiteur')} />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Card 3 — Formations */}
+          <div className="bv-card" style={{ animationDelay: '0.15s' }}>
+            <div className="bv-card-header">
+              <div className="bv-card-title-wrap">
+                <div className="bv-step-num">3</div>
+                <HiOutlineBookOpen size={18} className="bv-card-icon" />
+                <span className="bv-card-title">Formations Souhaitées à l'EFET</span>
+              </div>
+              <span className="bv-badge-count">{selectedFormations.length} sélectionnée(s)</span>
+            </div>
+            <div className="bv-card-body">
+              <p className="bv-hint">Cochez la ou les filières qui vous intéressent (multi-sélection possible) :</p>
+
+              {Object.keys(CATEGORIE_LABELS).map((catKey) => {
+                const items = formationsGrouped[catKey] || [];
+                if (items.length === 0) return null;
+                const CatIcon = CATEGORIE_ICON_COMPONENTS[catKey] || HiOutlineBookOpen;
                 return (
-                  <label
-                    key={s.id}
-                    className={`checkbox-item ${isChecked ? 'checked' : ''}`}
-                    style={{
-                      padding: '0.6rem 0.9rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleSource(s.id)}
-                    />
-                    {s.IconComp && <s.IconComp size={15} style={{ flexShrink: 0 }} />}
-                    <span style={{ fontWeight: isChecked ? 600 : 400 }}>{s.libelle}</span>
-                  </label>
+                  <div key={catKey} style={{ marginBottom: '1.25rem' }}>
+                    <div className="bv-section-label">
+                      <CatIcon size={15} />
+                      <span>{CATEGORIE_LABELS[catKey]}</span>
+                      <span className="bv-section-count">{items.length} filière(s)</span>
+                    </div>
+                    <div className="bv-checkbox-grid">
+                      {items.map((f) => {
+                        const isChecked = selectedFormations.includes(f.id);
+                        return (
+                          <label key={f.id} className={`bv-check-item${isChecked ? ' bv-checked' : ''}`} onClick={() => toggleFormation(f.id)}>
+                            <input type="checkbox" readOnly checked={isChecked} />
+                            <span className="bv-check-box">{isChecked && <span className="bv-check-tick">✓</span>}</span>
+                            <span>{f.nom}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Error notice */}
+          {/* Card 4 — Sources */}
+          <div className="bv-card" style={{ animationDelay: '0.2s' }}>
+            <div className="bv-card-header">
+              <div className="bv-card-title-wrap">
+                <div className="bv-step-num">4</div>
+                <HiOutlineSpeakerphone size={18} className="bv-card-icon" />
+                <span className="bv-card-title">Comment avez-vous connu l'EFET ?</span>
+              </div>
+              <span className="bv-badge-count">{selectedSources.length} source(s)</span>
+            </div>
+            <div className="bv-card-body">
+              <p className="bv-hint">Précisez le ou les moyens par lesquels vous avez découvert l'EFET Agadir :</p>
+              <div className="bv-checkbox-grid">
+                {sourcesList.map((s) => {
+                  const isChecked = selectedSources.includes(s.id);
+                  return (
+                    <label key={s.id} className={`bv-check-item${isChecked ? ' bv-checked' : ''}`} onClick={() => toggleSource(s.id)}>
+                      <input type="checkbox" readOnly checked={isChecked} />
+                      <span className="bv-check-box">{isChecked && <span className="bv-check-tick">✓</span>}</span>
+                      {s.IconComp && <s.IconComp size={14} style={{ flexShrink: 0, opacity: 0.7 }} />}
+                      <span>{s.libelle}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Error */}
           {errorMessage && (
-            <div
-              style={{
-                padding: '1rem',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--danger-bg)',
-                color: 'var(--danger)',
-                marginBottom: '1.5rem',
-                fontSize: '0.9rem',
-                border: '1px solid var(--danger)',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <HiOutlineExclamationCircle size={16} /> {errorMessage}
-              </span>
+            <div className="bv-error-box">
+              <HiOutlineExclamationCircle size={18} style={{ flexShrink: 0 }} />
+              {errorMessage}
             </div>
           )}
 
-          {/* Submit Action */}
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg"
-              disabled={submitting}
-              style={{ minWidth: '280px', padding: '1rem 2.5rem', fontSize: '1.1rem' }}
-            >
+          {/* Submit */}
+          <div className="bv-submit-wrap">
+            <button type="submit" className="bv-submit-btn" disabled={submitting}>
               {submitting ? (
                 <>
-                  <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }} />
-                  <span>Enregistrement en cours...</span>
+                  <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'bv-spin 0.7s linear infinite' }} />
+                  <span>Enregistrement…</span>
                 </>
               ) : (
                 <>
@@ -873,11 +994,14 @@ export default function BulletinVisite() {
                 </>
               )}
             </button>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
-              Vos données sont protégées et strictement destinées au service des admissions d'EFET Agadir.
+            <p className="bv-submit-note">
+              🔒 Vos données sont protégées et strictement destinées au service des admissions d'EFET Agadir.
             </p>
           </div>
+
         </form>
+
+        <div className="bv-footer">EFET AGADIR © {new Date().getFullYear()} — Système de Gestion des Visiteurs</div>
       </main>
     </div>
   );
